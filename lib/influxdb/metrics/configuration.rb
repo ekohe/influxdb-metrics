@@ -54,15 +54,23 @@ module InfluxDB
         end
       end
 
-      def client
-        @client ||= InfluxDB::Client.new(database,
-          hosts: hosts,
-          username: username,
-          password: password,
-          port: port,
-          async: async,
-          debug: debug
-        )
+      def write_point(name, data = {})
+        http = Net::HTTP.new(@hosts[0], @port)
+        url = "/write?consistency=all&db=#{@database}&precision=s&rp="
+        
+        tags = {"action" => data.delete(:action), "format" => data.delete(:format), "status" => data.delete(:status)}
+        tags = tags.keys.map{|k| "#{k}=#{tags[k]}" }.join(",")
+        
+        fields = data.keys.map{|k| "#{k}=#{data[k].is_a?(String) ? data[k].inspect : data[k]}" }.join(",")
+        line = "#{name},#{line_escape(tags)} #{line_escape(fields)}"
+
+        request = Net::HTTP::Post.new(url, { "Content-Type" => "application/octet-stream" })
+        request.body = line
+        response = http.request(request)
+      end
+      
+      def line_escape(string)
+        string.gsub(" ", "\ ").gsub("=", "\=").gsub(",", "\,")
       end
 
       def logger=(value)

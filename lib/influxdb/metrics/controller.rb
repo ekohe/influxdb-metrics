@@ -15,9 +15,7 @@ module InfluxDB
         view = (payload[:view_runtime] || 0).ceil
         db =  (payload[:db_runtime] || 0).ceil
 
-        write_point 'controller', metric.merge(value: timing)
-        write_point 'view', metric.merge(value: view)
-        write_point 'db', metric.merge(value: db)
+        write_point 'timing', metric.merge(user_email: (User.current_user.try(:email) rescue nil), controller: timing, view: view, db: db)
       rescue => e
         log :debug, "Unable to process action: #{e.message}"
       end
@@ -26,10 +24,10 @@ module InfluxDB
 
       def shared_info(start, finish, payload)
         {
-          hostname: Socket.gethostname,
           action: "#{payload[:controller]}##{payload[:action]}",
           format: request_format(payload[:format]),
-          status: payload[:status]
+          status: payload[:status],
+          path: payload[:path]
         }
       end
 

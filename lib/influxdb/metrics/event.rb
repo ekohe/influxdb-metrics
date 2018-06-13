@@ -20,13 +20,7 @@ module InfluxDB
       private
 
       delegate :config, to: InfluxDB::Metrics
-      delegate :client, :logger, to: :config
-
-      def write_point(name, data = {})
-        client.write_point("#{config.app_name}.#{name}", data)
-      rescue => e
-        log :debug, "Unable to write point: #{e.message}"
-      end
+      delegate :write_point, :logger, to: :config
 
       def log(level, message)
         logger.send(level, '[InfluxDB::Metrics] ' + message) if logger
