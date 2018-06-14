@@ -57,19 +57,26 @@ module InfluxDB
       def write_point(name, data = {})
         http = Net::HTTP.new(@hosts[0], @port)
         url = "/write?consistency=all&db=#{@database}&precision=s&rp="
-        
-        tags = {"action" => data.delete(:action), "format" => data.delete(:format), "status" => data.delete(:status)}
-        tags = tags.keys.map{|k| "#{k}=#{tags[k]}" }.join(",")
-        
-        fields = data.keys.map{|k| "#{k}=#{data[k].is_a?(String) ? data[k].inspect : data[k]}" }.join(",")
-        line = "#{name},#{line_escape(tags)} #{line_escape(fields)}"
 
+        tags = {"action" => data.delete(:action), "format" => data.delete(:format), "status" => data.delete(:status)}
+        tags = tags.keys.map {|k| tags[k].nil? ? nil : "#{k}=#{line_escape(tags[k])}" }.compact.join(",")
+
+        fields = data.keys.map {|k| data[k].nil? ? nil : "#{k}=#{line_escape(data[k].is_a?(String) ? data[k].inspect : data[k])}" }.compact.join(",")
+
+        tags = ',' + tags if tags.size > 0
+        line = "#{name}#{tags} #{fields}"
         request = Net::HTTP::Post.new(url, { "Content-Type" => "application/octet-stream" })
         request.body = line
         response = http.request(request)
+        if response.code != '204'
+          Rails.logger.warn 'Write to InfluxDB failed:'
+          Rails.logger.warn line
+          Rails.logger.warn response.body
+        end
       end
-      
+
       def line_escape(string)
+        return string unless string.is_a?(String)
         string.gsub(" ", "\ ").gsub("=", "\=").gsub(",", "\,")
       end
 
