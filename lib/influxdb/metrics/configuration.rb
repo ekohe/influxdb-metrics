@@ -58,7 +58,7 @@ module InfluxDB
         http = Net::HTTP.new(@hosts[0], @port)
         url = "/write?consistency=all&db=#{@database}&precision=s&rp="
 
-        tags = {"action" => data.delete(:action), "format" => data.delete(:format), "status" => data.delete(:status)}
+        tags = {"action" => data.delete(:action), "format" => data.delete(:format), "status" => data.delete(:status), "user_email" => data.delete(:user_email)}
         tags = tags.keys.map {|k| tags[k].nil? ? nil : "#{k}=#{line_escape(tags[k])}" }.compact.join(",")
 
         fields = data.keys.map {|k| data[k].nil? ? nil : "#{k}=#{line_escape(data[k].is_a?(String) ? data[k].inspect : data[k])}" }.compact.join(",")
